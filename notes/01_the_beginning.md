@@ -74,3 +74,4 @@ I like the second option quite a bit better so I'll probably pursue that. If thi
 ## Notes
 
 - To begin with, I will more or less hardcode Lidl UK receipt format for parsing, as it is a personal project and it is my primary place for shopping. Once the initial stuff is done, changing out the parsing for a more complex solution that could take in as many different grocery receipts as possible (I'll start with Sainsbury's - my second most frequented destination for food shopping).
+- In quite a large part, I've pursued this project because of the digital receipt functionality in the Lidl Plus app. I hope that parsing crumbled and imperfect receipts is a feasible task (or at the very least the workload does not increase exponentially).
