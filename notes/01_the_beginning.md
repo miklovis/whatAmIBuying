@@ -52,7 +52,15 @@ I have researched multiple options, let me go through them:
         - It still wasn't as accurate as I would have liked. Some errors in the text part as well as numbers just meant that I probably needed a more consistent and accurate solution.
         - On these Lidl receipts, the discount text is in light blue, which caused a problem for Tesseract. I messed around with image processing to chew up the image so old boy Tesseract wouldn't have to work as hard, but I am just as bad at image processing as Tesseract is at... parsing text?
 3. PaddlePaddle
-    - After the Tesseract fiasco, I looked at other OCR solutions, knowing that a reasonable (and preferrably free) solution is out there. And I stumbled upon PaddlePaddle([https://paddlepaddle.github.io/PaddleOCR/latest/en/index.html]). It seems great, reasonably simple to spin up and gives accurate results. I'm sure our blossoming relationship will definitely turn more sour over time but for now I'm more than satisfied with PaddleOCR/PaddlePaddle.
+    - After the Tesseract fiasco, I looked at other OCR solutions, knowing that a reasonable (and preferrably free) solution is out there. And I stumbled upon [PaddlePaddle](https://paddlepaddle.github.io/PaddleOCR/latest/en/index.html). It seems great, reasonably simple to spin up and gives accurate results. I'm sure our blossoming relationship will definitely turn more sour over time but for now I'm more than satisfied with PaddleOCR/PaddlePaddle.
+
+The next problem is making processing the image automatic - I cannot be manually cropping dozens of receipts to only contain the things I bought, and the process can be, again, quite tricky.
+
+To make my life easier in the beginning, I'll just take ~850 pixels off the top of the image to get to the meat and potatoes (hehe).
+
+![Cropping the top off the receipt](./images/top_cropping.png)
+
+The bottom of the image is a bit trickier.
 
 ## Notes
 
