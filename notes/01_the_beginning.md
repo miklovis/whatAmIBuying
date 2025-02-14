@@ -27,7 +27,7 @@ I decided to pursue this project for the following reasons:
 The system can be broken down into the following components:
 
 1. **Receipt Parsing**: Extract data from receipts (text, items, prices, etc.).
-2. **Data Normalization**: Standardize item names (e.g., "Coca Cola" and "Pepsi" → "Cola").
+2. **Data Normalisation**: Standardize item names (e.g., "Coca Cola" and "Pepsi" → "Cola").
 3. **Database Storage**: Store parsed and normalized data in a structured format.
 4. **Prediction Engine**: Use historical data to predict the likelihood of purchasing specific items.
 5. **User Interface**: Allow users to interact with the system (e.g., view predictions, input shopping plans).
@@ -61,6 +61,15 @@ To make my life easier in the beginning, I'll just take ~850 pixels off the top 
 ![Cropping the top off the receipt](./images/top_cropping.png)
 
 The bottom of the image is a bit trickier.
+
+My options are: 
+
+1. Locate the barcode and cut off the image just above that
+2. Using PaddleOCR, find one of the phrases implying end of the grocery list. If you look at the image above, some of those could be: `TOTAL`, `CARD`, `\*CUSTOMER COPY\* - PLEASE RETAIN RECEIPT`. If this end phrase is located, stop parsing the text (or if PaddleOCR does it all at the same time, not word by word, just bin whatever comes after). However, I would like to cross-check that everything was parsed correctly by verifying that values in the price column add up to the total.
+
+I like the second option quite a bit better so I'll probably pursue that. If this is done, I should be left only with the content that is useful in my particular use case.
+
+![Cropping the bottom off the receipt](./images/top_and_bottom_cropping.png)
 
 ## Notes
 
