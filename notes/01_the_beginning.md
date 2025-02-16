@@ -62,7 +62,7 @@ To make my life easier in the beginning, I'll just take ~850 pixels off the top 
 
 The bottom of the image is a bit trickier.
 
-My options are: 
+My options are:
 
 1. Locate the barcode and cut off the image just above that
 2. Using PaddleOCR, find one of the phrases implying end of the grocery list. If you look at the image above, some of those could be: `TOTAL`, `CARD`, `\*CUSTOMER COPY\* - PLEASE RETAIN RECEIPT`. If this end phrase is located, stop parsing the text (or if PaddleOCR does it all at the same time, not word by word, just bin whatever comes after). However, I would like to cross-check that everything was parsed correctly by verifying that values in the price column add up to the total.
