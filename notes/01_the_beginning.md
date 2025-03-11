@@ -71,6 +71,18 @@ I like the second option quite a bit better so I'll probably pursue that. If thi
 
 ![Cropping the bottom off the receipt](./images/top_and_bottom_cropping.png)
 
+The above bit was reasonably simple - there's room for improvement in terms of efficiency but it works perfect on the tests that I've run.
+
+With only the main part of the receipt left over, we can go to parsing the products. I'll try properly engineering a proper solution for figuring out a dictionary full of key:value pairs. My initial idea was to chuck the entire thing into PaddleOCR and see if it can do a good enough job that I'd only have to match string A with string B.
+
+Needless to say, that was not successful. It just spits out a load of words from the picture, roughly going top to bottom but in no strict order. As well as this, there were some inaccuracies. The model seems to be struggling less with big text (as opposed to this test where I chucked the entire thing in with reasonably small text). We will need some structure.
+
+My first idea was to split the left side (the products side) and the right side (the price side) of the receipt. The result - solution was OK, but there were too many inaccuracies when it came to matching the lines 1 to 1. Sometimes, the product row might have two rows assigned to it (particularly for weighable items) while on the right side, one of the rows would be empty. This made finding counterparts reasonably tricky and I was not sure what method I could employ to consistently get the correct results.
+
+The idea following that was slightly brighter - strip one row at a time and feed it into PaddleOCR. I learned that on my PDF receipts, the row is 54 pixels long. This worked very well bar a few hiccups from the OCR model, which I considered edge cases and set up some checks for. I could now add up the total sum and verify it against the one on the bottom of the receipt. Wonderful.
+
+The big, obvious problem with the way I've done it is the fact that I've hardcoded a lot of values - take 965 pixels off of the top of the image, from there onwards, every row will be 54 pixels high, traverse through rows up until the point where the OCR model found `TOTAL`, which indicates the end of the receipt.
+
 ## Notes
 
 - To begin with, I will more or less hardcode Lidl UK receipt format for parsing, as it is a personal project and it is my primary place for shopping. Once the initial stuff is done, changing out the parsing for a more complex solution that could take in as many different grocery receipts as possible (I'll start with Sainsbury's - my second most frequented destination for food shopping).

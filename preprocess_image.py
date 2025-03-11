@@ -1,9 +1,10 @@
 from paddleocr import PaddleOCR,draw_ocr
 from PIL import Image
+import os, re, json, sqlite3
 
 def crop_receipt(img_path):
     img = Image.open(img_path)
-    img = img.crop((0, 950, img.width, img.height))
+    img = img.crop((0, 965, img.width, img.height))
     img.save("cropped.png")
     
     location = find_total_value(base_path + "cropped.png", 500)
@@ -38,6 +39,9 @@ def find_total_value(img_path, limit):
 def split_products_and_prices(img_path):
     img = Image.open(img_path)
     
+
+    # img.crop(left px, top px, right px, bot px)
+    first_row = img.crop()
     product_values = img.crop((0, 0, 850, img.height))
     price_values = img.crop((850, 0, img.width, img.height))
     
@@ -67,54 +71,130 @@ def find_price_values(img):
                 file.write(line[1][0] + "\n")
                 #print(line)
 
+def divide_by_row(img_path):
+    img = Image.open(img_path)
+
+    # img.crop(left px, top px, right px, bot px)
+
+    start_px = 0
+    step = 54
+    row_no = 1
+
+    while (start_px + step) < img.height - step:
+        print(start_px + step)
+        print(img.height)
+        row = img.crop((0, start_px, img.width, start_px + step))
+        relative_path = "rows\\row.png"
+        row.save(".\\" + relative_path)
+        product = ""
+        is_discount = False
+        is_collated = False
+        is_lacking_letter = False
+
+        result = ocr.ocr(base_path + relative_path, cls=False)
+        price_or_letter_string = result[0][len(result[0]) - 1][1][0]
+        print("Length of last read string: " + str(len(price_or_letter_string)))
+        print("Last read string: " + price_or_letter_string)
+        if(price_or_letter_string[0] == '-'):
+            is_discount = True
+        
+        if len(price_or_letter_string) > 5 and is_discount == False and (price_or_letter_string[len(price_or_letter_string) - 1] == 'A' or price_or_letter_string[len(price_or_letter_string) - 1] == 'B'):
+            is_collated = True
+
+        if re.search("\\w+\\.\\w+", price_or_letter_string) and is_discount == False and is_collated == False:
+            is_lacking_letter = True
+
+        if price_or_letter_string == " A":
+            print(is_discount)
+            print(is_collated)
+            print(is_lacking_letter)
+
+        for idx in range(len(result)):
+            res = result[idx]
+
+            if is_discount == True or is_collated == True or is_lacking_letter == True:
+                identifier = 1
+            else:
+                identifier = 2
+
+            for idy in range(len(res) - identifier):
+                line = res[idy]
+                product += line[1][0] + " "
+
+            for idy in range(len(res)):
+                print(res[idy][1][0])
+
+        if is_discount or is_lacking_letter:
+            price = result[0][len(result[0]) - 1][1][0]
+        elif is_collated:
+            price = result[0][len(result[0]) - 1][1][0].split(' ')[0]
+        else:
+            price = result[0][len(result[0]) - 2][1][0]
+
+
+        product_price_dictionary[product.strip()] = price
+
+        os.remove(base_path + relative_path)
+        start_px += step
+        row_no += 1
+
+
+    print(product_price_dictionary)
+
+    sum = 0.0
+
+    for idx in product_price_dictionary.values():
+        try:
+            sum += float(idx)
+        except ValueError:
+            pass
+
+
+    print(round(sum, 2))
+
+def find_phrase(phrase, img_path, full_image=False):
+    # TODO
+    step = 500
+    print("LIMIT: ", limit)
+    
+    img = Image.open(img_path)
+    cropped_image = img.crop((0, 0, img.width, limit))
+    
+    cropped_image.save("cropped_image.png")
+    
+    result = ocr.ocr("cropped_image.png", cls=False)
+    
+    for idx in range(len(result)):
+        res = result[idx]
+        for line in res:
+            if re.search(phrase, line[0][2][1]):
+                print(phrase + " FOUND:", line[0][2][1])
+                print(line)
+                print(type(line[0][2][1]))
+                return int(line[0][2][1])
+
+    return None
+
+    
+
 ocr = PaddleOCR(lang='en') # need to run only once to download and load model into memory
-img_path = "C:\\Users\\arnas\\Downloads\\IMG_0196.PNG"
-base_path = "C:\\Users\\arnas\\OneDrive\\Documents\\Receipts\\"
+img_path = "C:\\Users\\AMI01\\Documents\\My Web Sites\\whatAmIBuying\\IMG_0276.PNG"
+base_path = "C:\\Users\\AMI01\\Documents\\My Web Sites\\whatAmIBuying\\"
+product_price_dictionary = dict()
 
 cropped_image_name = crop_receipt(img_path)
 
-product_values, price_values = split_products_and_prices(base_path + "cropped_image.png")
+print(base_path + cropped_image_name)
+divide_by_row(base_path + cropped_image_name)
 
-find_product_names(product_values)
-find_price_values(price_values)
+found_phrase = find_phrase("TOTAL", img_path)
+if found_phrase is not None:
+    print(found_phrase)
 
-# open product_names.txt and price_values.txt and match the products with their prices
-with open("product_names.txt", "r") as product_file:
-    product_names = product_file.readlines()
-    product_names = [name.strip() for name in product_names]
-    
-with open("price_values.txt", "r") as price_file:
-    price_values = price_file.readlines()
-    price_values = [price.strip() for price in price_values]
-    
-for idx in range(len(product_names)):
-    print(product_names[idx], price_values[idx])
+found_phrase = find_phrase("Date:", img_path)
+if found_phrase is not None:
+    print(found_phrase)
 
-"""
-finish_flag = False
-total_value = 0
-with open("output.txt", "w") as file:
-    for idx in range(len(result)):
-        res = result[idx]
-        for line in res:
-            file.write(line[1][0] + "\n")
-            print(line)
-            if finish_flag:
-                total_value = line[1][0]
-                break
-            if line[1][0] == "TOTAL":
-                print("TOTAL FOUND")
-                finish_flag = True
+file = open("output.json", "w")
+file.write(json.dumps(product_price_dictionary, sort_keys=False))
 
-
-result = ocr.ocr("C:\\Users\\arnas\\OneDrive\\Documents\\Receipts\\price_values.png", cls=False)
-with open("price_values.txt", "w") as file:
-    for idx in range(len(result)):
-        res = result[idx]
-        for line in res:
-            file.write(line[1][0] + "\n")
-            print(line)
-            if(line[1][0] == total_value):
-                print("FOUND TOTAL VALUE")
-                break
-"""
