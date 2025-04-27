@@ -84,8 +84,8 @@ def divide_by_row(img_path):
         print(start_px + step)
         print(img.height)
         row = img.crop((0, start_px, img.width, start_px + step))
-        relative_path = "rows\\row.png"
-        row.save(".\\" + relative_path)
+        relative_path = "rows/row.png"
+        row.save("./" + relative_path)
         product = ""
         is_discount = False
         is_collated = False
@@ -143,16 +143,17 @@ def divide_by_row(img_path):
 
     sum = 0.0
 
-    for idx in product_price_dictionary.values():
+    for key, value in product_price_dictionary.items():
         try:
-            sum += float(idx)
+            cleaned_product_price_dictionary[key] = value
+            sum += float(value)
         except ValueError:
             pass
 
 
     print(round(sum, 2))
 
-def find_phrase(phrase, img_path, full_image=False):
+def find_phrase(phrase, img_path, limit, full_image=False):
     # TODO
     step = 500
     print("LIMIT: ", limit)
@@ -178,23 +179,24 @@ def find_phrase(phrase, img_path, full_image=False):
     
 
 ocr = PaddleOCR(lang='en') # need to run only once to download and load model into memory
-img_path = "C:\\Users\\AMI01\\Documents\\My Web Sites\\whatAmIBuying\\IMG_0276.PNG"
-base_path = "C:\\Users\\AMI01\\Documents\\My Web Sites\\whatAmIBuying\\"
+img_path = "./IMG_0196.png"
+base_path = ""
 product_price_dictionary = dict()
+cleaned_product_price_dictionary = dict()
 
 cropped_image_name = crop_receipt(img_path)
 
 print(base_path + cropped_image_name)
 divide_by_row(base_path + cropped_image_name)
 
-found_phrase = find_phrase("TOTAL", img_path)
-if found_phrase is not None:
-    print(found_phrase)
+#found_phrase = find_phrase("TOTAL", img_path, 500)
+#if found_phrase is not None:
+#    print(found_phrase)
 
-found_phrase = find_phrase("Date:", img_path)
-if found_phrase is not None:
-    print(found_phrase)
+#found_phrase = find_phrase("Date:", img_path, 500)
+#if found_phrase is not None:
+#    print(found_phrase)
 
 file = open("output.json", "w")
-file.write(json.dumps(product_price_dictionary, sort_keys=False))
+file.write(json.dumps(cleaned_product_price_dictionary, sort_keys=False))
 

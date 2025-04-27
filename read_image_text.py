@@ -1,6 +1,6 @@
 from paddleocr import PaddleOCR,draw_ocr
 ocr = PaddleOCR(lang='en') # need to run only once to download and load model into memory
-img_path = "C:\\Users\\arnas\\Downloads\\IMG_0196.PNG"
+img_path = "IMG_0196.PNG"
 result = ocr.ocr(img_path, cls=False)
 
 with open("imagetext.txt", "w") as file:

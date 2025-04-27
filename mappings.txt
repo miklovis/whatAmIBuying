@@ -1,0 +1,56 @@
+Microwave Pilau Rice -> Rice
+Beef Steak Mince -> Beef
+Chick Breast Fil -> Chicken
+Orig Italy Parma Ham -> Ham
+Tortelloni Tomato -> Pasta
+Vine Tomatoes -> Vegetables
+FullFatNaturalYogurt -> Dairy
+Cheese & Salt Sticks -> Savoury Snacks
+Mature Cheddar -> Dairy
+Evaporated Milk -> Dairy
+Wholemeal SeededLoaf -> Bread
+Tomato & Bacon Sauce -> Sauces
+Medium Spice Pouch -> Spices
+Cooking Mix Taco -> Spices
+Tortilla Wraps -> Bread
+Mixed Herbs -> Spices
+Soured Cream -> Dairy
+Kitchen Towels -> Household
+Refuse Sacks -> Household
+Crunchy Stir Fry -> Vegetables
+Vine Tomatoes -> Vegetables
+Mie Noodles -> Pasta
+Glass Noodles -> Pasta
+Squeezy Real Mayo -> Sauces
+Original Soft Cheese -> Dairy
+Strawberries -> Fruit
+Smoked Salmon -> Fish
+Blueberries -> Fruit
+Chick Breast Fil -> Chicken
+Wafer Thin Ham -> Ham
+Lean Beef Mince -> Beef
+British Mild Cheddar -> Dairy
+Greek Feta Cheese -> Dairy
+Large Red Onions -> Vegetables
+Large White Sourdoug -> Bread
+XL Avocado -> Vegetables
+Seeded Wraps -> Bread
+Frozen French Fries -> Frozen Goods
+Greek Natural Yogurt -> Dairy
+Kitchen Towels -> Household
+Demi Baguette -> Bread
+Apple & Mango Juice -> Non-alcoholic beverage
+Sour Cream Sticks -> Snack
+Stock Pots Chicken -> Spices
+Stock Pots Veal -> Spices
+Iceberg Lettuce -> Vegetables
+Blueberries -> Fruit
+Seeded Brioche Buns -> Bread
+4 Quarter Pounders -> Beef
+Large Red Onions -> Vegetables
+Extra Large Onions -> Vegetables
+Mild Cheddar Slices -> Dairy
+Panini Roll -> Bread
+Cheese & Salt Sticks -> Snack
+Bananas Loose -> Fruit
+Grocers Easy Peelers -> Fruit

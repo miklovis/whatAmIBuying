@@ -1,15 +1,17 @@
 package main
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os/exec"
+	"os"
 	"strconv"
-	"strings"
+
+	_ "modernc.org/sqlite"
 )
 
-func main() {
-	cmd := exec.Command("python", "C:\\Users\\arnas\\OneDrive\\Documents\\Receipts\\preprocess_image.py")
+/*func main() {
+	cmd := exec.Command("python", "preprocess_image.py")
 	err := cmd.Run()
 	if err != nil {
 		fmt.Println("Error preprocessing image:", err)
@@ -17,7 +19,7 @@ func main() {
 	}
 
 	// Read the output file
-	data, err := ioutil.ReadFile("C:\\Users\\arnas\\OneDrive\\Documents\\Receipts\\output.txt")
+	data, err := ioutil.ReadFile("output.json")
 	if err != nil {
 		fmt.Println("Error reading output file:", err)
 		return
@@ -56,8 +58,87 @@ func main() {
 	content = strings.Join(filteredLines, "\n")
 
 	// Print the modified contents of the output file
-	fmt.Println(content)
+	fmt.Println(content),
 
 	// Print the total sum
 	fmt.Printf("Total Sum: %.2f\n", totalSum)
+}*/
+
+type Purchase struct {
+	Product    string
+	Price      string
+	PriceFloat float64
+}
+
+type Category struct {
+	ID       int
+	Category string
+}
+
+func main() {
+	var purchases []Purchase
+
+	data, err := os.ReadFile("output.json")
+	if err != nil {
+		fmt.Println("Error reading output file:", err)
+		return
+	}
+
+	var priceMap map[string]string
+	err = json.Unmarshal(data, &priceMap)
+	if err != nil {
+		fmt.Println("Error decoding json:", err)
+		return
+	}
+
+	for product, price := range priceMap {
+		purchases = append(purchases, Purchase{Product: product, Price: price})
+
+		var newPurchase Purchase
+		newPurchase.Product = product
+		newPurchase.Price = price
+		newPurchase.PriceFloat, err = strconv.ParseFloat(price, 64)
+
+		if err == nil {
+			purchases = append(purchases, newPurchase)
+		}
+
+	}
+
+	var sum float64
+	for i := range purchases {
+		fmt.Println(purchases[i].Product + " " + purchases[i].Price + " " + fmt.Sprintf("%.2f", sum))
+		sum += purchases[i].PriceFloat
+	}
+
+	db, err := sql.Open("sqlite", "test_database.db")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	rows, err := db.Query("SELECT * FROM Categories")
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer rows.Close()
+
+	var categories []Category
+
+	for rows.Next() {
+		var c Category
+
+		err := rows.Scan(&c.ID, &c.Category)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		categories = append(categories, c)
+
+	}
+
+	for _, category := range categories {
+		fmt.Printf("%+v\n", category)
+	}
+
+	fmt.Printf("Total categories: %d", len(categories))
 }
