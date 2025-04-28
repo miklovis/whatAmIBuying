@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
@@ -70,45 +71,54 @@ type Purchase struct {
 	PriceFloat float64
 }
 
+type Receipt struct {
+	Date      string     `json:"date"`
+	Purchases []Purchase `json:"-"`
+}
+
+type rawJsonData struct {
+	Date   string            `json:"date"`
+	Values map[string]string `json:"values"`
+}
+
 type Category struct {
 	ID       int
 	Category string
 }
 
 func main() {
-	var purchases []Purchase
 
-	data, err := os.ReadFile("output.json")
+	fileContent, err := os.ReadFile("output.json")
 	if err != nil {
 		fmt.Println("Error reading output file:", err)
 		return
 	}
 
-	var priceMap map[string]string
-	err = json.Unmarshal(data, &priceMap)
+	var raw rawJsonData
+	err = json.Unmarshal(fileContent, &raw)
 	if err != nil {
-		fmt.Println("Error decoding json:", err)
-		return
+		log.Fatal("Error unmarshalling JSON:", err)
 	}
 
-	for product, price := range priceMap {
-		purchases = append(purchases, Purchase{Product: product, Price: price})
+	var data Receipt
+	data.Date = raw.Date
 
+	for product, price := range raw.Values {
 		var newPurchase Purchase
 		newPurchase.Product = product
 		newPurchase.Price = price
 		newPurchase.PriceFloat, err = strconv.ParseFloat(price, 64)
 
 		if err == nil {
-			purchases = append(purchases, newPurchase)
-		}
+			data.Purchases = append(data.Purchases, newPurchase)
 
+		}
 	}
 
 	var sum float64
-	for i := range purchases {
-		fmt.Println(purchases[i].Product + " " + purchases[i].Price + " " + fmt.Sprintf("%.2f", sum))
-		sum += purchases[i].PriceFloat
+	for i := range data.Purchases {
+		fmt.Println(data.Purchases[i].Product + " " + data.Purchases[i].Price + " " + fmt.Sprintf("%.2f", sum))
+		sum += data.Purchases[i].PriceFloat
 	}
 
 	db, err := sql.Open("sqlite", "test_database.db")
@@ -141,4 +151,5 @@ func main() {
 	}
 
 	fmt.Printf("Total categories: %d", len(categories))
+
 }

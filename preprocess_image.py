@@ -1,6 +1,17 @@
 from paddleocr import PaddleOCR,draw_ocr
 from PIL import Image
 import os, re, json, sqlite3
+import datetime
+from json import JSONEncoder
+
+class Receipt:
+    def __init__(self, values):
+        self.date = str(datetime.datetime.utcnow())
+        self.values = values
+
+class MyEncoder(JSONEncoder):
+    def default(self, o):
+        return o.__dict__
 
 def crop_receipt(img_path):
     img = Image.open(img_path)
@@ -197,6 +208,11 @@ divide_by_row(base_path + cropped_image_name)
 #if found_phrase is not None:
 #    print(found_phrase)
 
-file = open("output.json", "w")
-file.write(json.dumps(cleaned_product_price_dictionary, sort_keys=False))
+receipt = Receipt(cleaned_product_price_dictionary)
 
+# file = open("output.json", "w")
+# file.write(json.dumps(receipt, sort_keys=False))
+
+
+with open('output.json', 'w') as f:
+    json.dump(receipt, f, cls=MyEncoder, indent=4)
