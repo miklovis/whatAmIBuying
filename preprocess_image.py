@@ -5,9 +5,10 @@ import datetime
 from json import JSONEncoder
 
 class Receipt:
-    def __init__(self, values):
+    def __init__(self, values, amount):
         self.date = str(datetime.datetime.utcnow())
         self.values = values
+        self.amount = str(amount)
 
 class MyEncoder(JSONEncoder):
     def default(self, o):
@@ -84,7 +85,7 @@ def find_price_values(img):
 
 def divide_by_row(img_path):
     img = Image.open(img_path)
-
+    global amount
     # img.crop(left px, top px, right px, bot px)
 
     start_px = 0
@@ -152,17 +153,16 @@ def divide_by_row(img_path):
 
     print(product_price_dictionary)
 
-    sum = 0.0
-
     for key, value in product_price_dictionary.items():
         try:
             cleaned_product_price_dictionary[key] = value
-            sum += float(value)
+            amount = amount + float(value)
         except ValueError:
             pass
 
+    amount = round(amount, 2)
 
-    print(round(sum, 2))
+    print(amount)
 
 def find_phrase(phrase, img_path, limit, full_image=False):
     # TODO
@@ -194,6 +194,7 @@ img_path = "./IMG_0196.png"
 base_path = ""
 product_price_dictionary = dict()
 cleaned_product_price_dictionary = dict()
+amount = 0.0
 
 cropped_image_name = crop_receipt(img_path)
 
@@ -208,7 +209,7 @@ divide_by_row(base_path + cropped_image_name)
 #if found_phrase is not None:
 #    print(found_phrase)
 
-receipt = Receipt(cleaned_product_price_dictionary)
+receipt = Receipt(cleaned_product_price_dictionary, amount)
 
 # file = open("output.json", "w")
 # file.write(json.dumps(receipt, sort_keys=False))
