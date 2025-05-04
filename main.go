@@ -95,7 +95,19 @@ func AddPurchase(purchase Purchase, receiptId int64, ctx context.Context, tx *sq
 	return id.LastInsertId()
 }
 
-func main() {
+func AssignPurchases() {
+	/*db, err := OpenDatabase()
+	if err != nil {
+		log.Fatal("Error opening database: ", err)
+	}*/
+
+}
+
+func ReadReceipts() {
+	db, err := OpenDatabase()
+	if err != nil {
+		log.Fatal("Error opening database: ", err)
+	}
 
 	fileContent, err := os.ReadFile("output.json")
 	if err != nil {
@@ -130,11 +142,6 @@ func main() {
 		sum += data.Purchases[i].PriceFloat
 	}
 
-	db, err := sql.Open("sqlite", "test_database.db")
-	if err != nil {
-		fmt.Println(err)
-	}
-
 	rows, err := db.Query("SELECT * FROM Categories")
 	if err != nil {
 		fmt.Println(err)
@@ -166,4 +173,22 @@ func main() {
 
 	fmt.Printf("Total categories: %d", len(categories))
 	fmt.Printf("Added receipt with id %d", id)
+
+}
+
+func OpenDatabase() (*sql.DB, error) {
+	db, err := sql.Open("sqlite", "test_database.db")
+	return db, err
+}
+
+func main() {
+
+	operation := "assign"
+
+	if operation == "assign" {
+		AssignPurchases()
+	} else if operation == "read" {
+		ReadReceipts()
+	}
+
 }
