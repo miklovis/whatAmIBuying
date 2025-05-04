@@ -56,35 +56,40 @@ func AddReceipt(receipt Receipt, db *sql.DB) (int64, error) {
 		log.Fatal("Error inserting receipt into database: ", err)
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		log.Fatal("Error committing the transaction to the database: ", err)
-	}
-
 	receiptId, err := id.LastInsertId()
 	if err != nil {
 		log.Fatal("Error getting last insert ID: ", err)
 	}
 
-	for _, purchase := range receipt.Purchases {
-		_, err = AddPurchase(purchase, receiptId, ctx, tx)
-		if err != nil {
-			log.Fatal("Error adding a purchase: ", err)
-		}
+	err = AddPurchaseList(receipt.Purchases, receiptId, ctx, tx)
+	if err != nil {
+		log.Fatal("Error adding purchase list to the database: ", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Fatal("Error committing the transaction into the database: ", err)
 	}
 
 	return receiptId, err
+}
+
+func AddPurchaseList(purchases []Purchase, receiptId int64, ctx context.Context, tx *sql.Tx) error {
+	for _, purchase := range purchases {
+		_, err := AddPurchase(purchase, receiptId, ctx, tx)
+		if err != nil {
+			log.Fatal("Error adding a purchase: ", err)
+			return err
+		}
+	}
+
+	return nil
 }
 
 func AddPurchase(purchase Purchase, receiptId int64, ctx context.Context, tx *sql.Tx) (int64, error) {
 	id, err := tx.ExecContext(ctx, "INSERT INTO Purchases (name, price, receiptId) VALUES (?, ?, ?)", purchase.Product, purchase.Price, receiptId)
 	if err != nil {
 		log.Fatal("Error inserting purchase into database: ", err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		log.Fatal("Error committing the transaction into the database: ", err)
 	}
 
 	return id.LastInsertId()

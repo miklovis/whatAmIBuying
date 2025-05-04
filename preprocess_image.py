@@ -155,8 +155,10 @@ def divide_by_row(img_path):
 
     for key, value in product_price_dictionary.items():
         try:
-            cleaned_product_price_dictionary[key] = value
-            amount = amount + float(value)
+            convertedValue = float(value)
+            amount = amount + convertedValue
+            if convertedValue > 0:
+                cleaned_product_price_dictionary[key] = value
         except ValueError:
             pass
 
