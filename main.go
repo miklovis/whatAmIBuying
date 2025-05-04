@@ -96,10 +96,23 @@ func AddPurchase(purchase Purchase, receiptId int64, ctx context.Context, tx *sq
 }
 
 func AssignPurchases() {
-	/*db, err := OpenDatabase()
+	db, err := OpenDatabase()
 	if err != nil {
 		log.Fatal("Error opening database: ", err)
-	}*/
+	}
+
+	rows, err := db.Query("SELECT * FROM Purchases WHERE categoryId IS NULL")
+	if err != nil {
+		log.Fatal("Error reading from Purchases table: ", err)
+	}
+	defer rows.Close()
+
+	noOfRows := 0
+	for rows.Next() {
+		noOfRows++
+	}
+
+	fmt.Println(noOfRows)
 
 }
 
