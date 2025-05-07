@@ -4,3 +4,4 @@
 5. fix entry of discounts [DONE]
 6. unit tests
 7. implement choosing and assigning the category
+8. move out to separate files

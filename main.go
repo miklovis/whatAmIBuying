@@ -107,13 +107,36 @@ func AssignPurchases() {
 	}
 	defer rows.Close()
 
-	noOfRows := 0
+	var categories = GetAllCategories(db)
+
+	fmt.Println("Assign the purchase to one of these categories: ")
+	for _, category := range *categories {
+		fmt.Printf("ID: %d, Category: %s \n", category.ID, category.Category)
+	}
+}
+
+func GetAllCategories(db *sql.DB) *[]Category {
+	rows, err := db.Query("SELECT * FROM Categories")
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer rows.Close()
+
+	var categories []Category
+
 	for rows.Next() {
-		noOfRows++
+		var c Category
+
+		err := rows.Scan(&c.ID, &c.Category)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		categories = append(categories, c)
+
 	}
 
-	fmt.Println(noOfRows)
-
+	return &categories
 }
 
 func ReadReceipts() {
@@ -155,36 +178,11 @@ func ReadReceipts() {
 		sum += data.Purchases[i].PriceFloat
 	}
 
-	rows, err := db.Query("SELECT * FROM Categories")
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer rows.Close()
-
-	var categories []Category
-
-	for rows.Next() {
-		var c Category
-
-		err := rows.Scan(&c.ID, &c.Category)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		categories = append(categories, c)
-
-	}
-
-	for _, category := range categories {
-		fmt.Printf("%+v\n", category)
-	}
-
 	id, err := AddReceipt(data, db)
 	if err != nil {
 		log.Fatal("Error adding receipt: ", err)
 	}
 
-	fmt.Printf("Total categories: %d", len(categories))
 	fmt.Printf("Added receipt with id %d", id)
 
 }
