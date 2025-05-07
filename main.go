@@ -13,6 +13,7 @@ import (
 )
 
 type Purchase struct {
+	Id         int
 	Product    string
 	Price      string
 	PriceFloat float64
@@ -95,7 +96,7 @@ func AddPurchase(purchase Purchase, receiptId int64, ctx context.Context, tx *sq
 	return id.LastInsertId()
 }
 
-func AssignPurchases() {
+func AssignPurchases() error {
 	db, err := OpenDatabase()
 	if err != nil {
 		log.Fatal("Error opening database: ", err)
@@ -113,6 +114,39 @@ func AssignPurchases() {
 	for _, category := range *categories {
 		fmt.Printf("ID: %d, Category: %s \n", category.ID, category.Category)
 	}
+
+	for rows.Next() {
+		var p Purchase
+		var id int
+		var ignored sql.RawBytes
+
+		err := rows.Scan(&p.Id, &p.Product, &p.Price, &ignored, &ignored)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		fmt.Printf("Which category does %s bought for %s belong to?", p.Product, p.Price)
+		fmt.Scan(&id)
+
+		_, err = ChangePurchaseCategory(db, &id, &p.Id)
+		if err != nil {
+			return fmt.Errorf("changing purchase category failed: %w", err)
+		}
+
+		fmt.Println("changing purchase category succeeded")
+	}
+
+	return nil
+}
+
+func ChangePurchaseCategory(db *sql.DB, categoryId *int, purchaseId *int) (sql.Result, error) {
+	result, err := db.Exec("UPDATE Purchases SET categoryId = ? WHERE id = ?", categoryId, purchaseId)
+	if err != nil {
+		return nil, fmt.Errorf("Query failed: %w", err)
+	}
+	fmt.Println("changing succeeded")
+
+	return result, nil
 }
 
 func GetAllCategories(db *sql.DB) *[]Category {
@@ -197,7 +231,10 @@ func main() {
 	operation := "assign"
 
 	if operation == "assign" {
-		AssignPurchases()
+		err := AssignPurchases()
+		if err != nil {
+			fmt.Errorf("Error assigning purchases: %w", err)
+		}
 	} else if operation == "read" {
 		ReadReceipts()
 	}
