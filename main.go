@@ -17,6 +17,8 @@ type Purchase struct {
 	Product    string
 	Price      string
 	PriceFloat float64
+	ReceiptId  int
+	CategoryId sql.NullInt64
 }
 
 type Receipt struct {
@@ -115,25 +117,30 @@ func AssignPurchases() error {
 		fmt.Printf("ID: %d, Category: %s \n", category.ID, category.Category)
 	}
 
+	var purchasesWithNullCategoryId []Purchase
+
 	for rows.Next() {
 		var p Purchase
-		var id int
-		var ignored sql.RawBytes
 
-		err := rows.Scan(&p.Id, &p.Product, &p.Price, &ignored, &ignored)
+		err := rows.Scan(&p.Id, &p.Product, &p.Price, &p.ReceiptId, &p.CategoryId)
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		fmt.Printf("Which category does %s bought for %s belong to?", p.Product, p.Price)
+		purchasesWithNullCategoryId = append(purchasesWithNullCategoryId, p)
+
+	}
+
+	for _, p := range purchasesWithNullCategoryId {
+		var id int
+
+		fmt.Printf("Which category does %s bought for %s belong to? ", p.Product, p.Price)
 		fmt.Scan(&id)
 
 		_, err = ChangePurchaseCategory(db, &id, &p.Id)
 		if err != nil {
 			return fmt.Errorf("changing purchase category failed: %w", err)
 		}
-
-		fmt.Println("changing purchase category succeeded")
 	}
 
 	return nil
@@ -144,7 +151,6 @@ func ChangePurchaseCategory(db *sql.DB, categoryId *int, purchaseId *int) (sql.R
 	if err != nil {
 		return nil, fmt.Errorf("Query failed: %w", err)
 	}
-	fmt.Println("changing succeeded")
 
 	return result, nil
 }
