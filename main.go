@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -233,16 +234,21 @@ func OpenDatabase() (*sql.DB, error) {
 }
 
 func main() {
+	assignFlag := flag.Bool("a", false, "assign mode (shorthand)")
+	assignFlagLong := flag.Bool("assign", false, "assign mode")
+	readFlag := flag.Bool("r", false, "read mode (shorthand)")
+	readFlagLong := flag.Bool("read", false, "read mode")
 
-	operation := "assign"
+	flag.Parse()
 
-	if operation == "assign" {
+	if *assignFlag || *assignFlagLong {
+		fmt.Println("Assign mode activated")
 		err := AssignPurchases()
 		if err != nil {
 			fmt.Errorf("Error assigning purchases: %w", err)
 		}
-	} else if operation == "read" {
+	} else if *readFlag || *readFlagLong {
+		fmt.Println("Read mode activated")
 		ReadReceipts()
 	}
-
 }

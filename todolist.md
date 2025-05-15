@@ -7,4 +7,4 @@
 7.1. sanitize input values
 7.2. make sure one at a time is scanned (possibly bufio)
 8. move out to separate files
-9. start arguments
+9. start arguments [DONE]
