@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -37,6 +38,11 @@ type rawJsonData struct {
 type Category struct {
 	ID       int
 	Category string
+}
+
+type CategoryScore struct {
+	CategoryID int
+	Score      float64
 }
 
 func AddReceipt(receipt Receipt, db *sql.DB) (int64, error) {
@@ -228,6 +234,80 @@ func ReadReceipts() {
 
 }
 
+func PredictPurchases() {
+	db, err := OpenDatabase()
+	if err != nil {
+		log.Fatal("Error opening database: ", err)
+	}
+
+	targetTime := time.Date(2023, 12, 24, 15, 30, 0, 0, time.Local) // Example: Christmas Eve at 3:30 PM
+
+	_, _ = getTimeBasedRecommendations(db, targetTime)
+}
+
+func getTimeBasedRecommendations(db *sql.DB, targetTime time.Time) ([]CategoryScore, error) {
+	// Extract temporal components from target time
+	targetHour := targetTime.Hour()
+	targetWeekday := targetTime.Weekday()
+	targetMonth := targetTime.Month()
+
+	// Query to analyze purchase patterns
+	query := `
+		SELECT 
+			p.id, 
+			p.name,
+			-- Time of day score (0-1 how close to target hour)
+			(1 - ABS(? - HOUR(purchase_time)) / 12.0) * 0.3 AS hour_score,
+			-- Day of week score (1 if match, 0 otherwise)
+			CASE WHEN WEEKDAY(purchase_time) = ? THEN 0.3 ELSE 0 END AS weekday_score,
+			-- Month score (1 if match, 0 otherwise)
+			CASE WHEN MONTH(purchase_time) = ? THEN 0.4 ELSE 0 END AS month_score,
+			-- Overall purchase frequency (normalized)
+			COUNT(*) / (SELECT MAX(purchase_count) FROM (
+				SELECT COUNT(*) AS purchase_count FROM purchases GROUP BY product_id
+			) AS counts) * 0.5 AS frequency_score
+		FROM purchases pu
+		JOIN products p ON pu.product_id = p.id
+		GROUP BY p.id, p.name
+		ORDER BY (hour_score + weekday_score + month_score + frequency_score) DESC
+		LIMIT 10
+	`
+	// SELECT p.id, p.name, p.price, p.receiptId, r.date FROM Purchases p left join Receipts r on p.receiptId = r.id WHERE p.categoryId IS NOT NULL
+
+	/* SELECT 	p.id,
+		p.name,
+		(1 - ABS(? - HOUR(r.date)) / 12.0) * 0.3 AS hour_score,
+		CASE WHEN WEEKDAY(r.date) = ? THEN 0.3 ELSE 0 END AS weekday_score,
+		CASE WHEN MONTH(purchase_time) = ? THEN 0.4 ELSE 0 END AS month_score,
+		-- Overall purchase frequency to be added
+		p.price,
+		p.receiptId,
+		r.date
+	FROM Purchases p
+	left join Receipts r on p.receiptId = r.id
+	WHERE p.categoryId IS NOT NULL
+	ORDER BY (hour_score + weekday_score + month_score) DESC*/
+
+	rows, err := db.Query(query, targetHour, targetWeekday, targetMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var recommendations []CategoryScore
+	for rows.Next() {
+		var ps CategoryScore
+		var hourScore, weekdayScore, monthScore, freqScore float64
+		err := rows.Scan(&ps.CategoryID, &weekdayScore, &monthScore, &freqScore)
+		if err != nil {
+			return nil, err
+		}
+		ps.Score = hourScore + weekdayScore + monthScore + freqScore
+		recommendations = append(recommendations, ps)
+	}
+
+	return recommendations, nil
+}
 func OpenDatabase() (*sql.DB, error) {
 	db, err := sql.Open("sqlite", "test_database.db")
 	return db, err
@@ -238,6 +318,8 @@ func main() {
 	assignFlagLong := flag.Bool("assign", false, "assign mode")
 	readFlag := flag.Bool("r", false, "read mode (shorthand)")
 	readFlagLong := flag.Bool("read", false, "read mode")
+	predictFlag := flag.Bool("p", false, "predict mode (shorthand)")
+	predictFlagLong := flag.Bool("predict", false, "predict mode")
 
 	flag.Parse()
 
@@ -250,5 +332,8 @@ func main() {
 	} else if *readFlag || *readFlagLong {
 		fmt.Println("Read mode activated")
 		ReadReceipts()
+	} else if *predictFlag || *predictFlagLong {
+		fmt.Println("Predict mode activated")
+		PredictPurchases()
 	}
 }
