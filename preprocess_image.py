@@ -5,8 +5,8 @@ import datetime
 from json import JSONEncoder
 
 class Receipt:
-    def __init__(self, values, amount):
-        self.date = str(datetime.datetime.utcnow())
+    def __init__(self, date, values, amount):
+        self.date = str(date)
         self.values = values
         self.amount = str(amount)
 
@@ -43,7 +43,6 @@ def find_total_value(img_path, limit):
             if line[1][0] == "TOTAL":
                 print("TOTAL FOUND:", line[0][2][1])
                 print(line)
-                print(type(line[0][2][1]))
                 return int(line[0][2][1])
             
     return find_total_value(img_path, limit + step)
@@ -168,11 +167,16 @@ def divide_by_row(img_path):
 
 def find_phrase(phrase, img_path, limit, full_image=False):
     # TODO
+    start = 0
     step = 500
     print("LIMIT: ", limit)
     
     img = Image.open(img_path)
-    cropped_image = img.crop((0, 0, img.width, limit))
+    
+    if limit >= 1000:
+        start = limit - 750
+
+    cropped_image = img.crop((0, start, img.width, limit))
     
     cropped_image.save("cropped_image.png")
     
@@ -181,15 +185,49 @@ def find_phrase(phrase, img_path, limit, full_image=False):
     for idx in range(len(result)):
         res = result[idx]
         for line in res:
-            if re.search(phrase, line[0][2][1]):
-                print(phrase + " FOUND:", line[0][2][1])
-                print(line)
-                print(type(line[0][2][1]))
-                return int(line[0][2][1])
+            #print(line[1][0])
+            if re.search(phrase, line[1][0]):
+                #print(phrase + " FOUND:", line[0][2][1])
+                #print(line)
+                #print(type(line[0][2][1]))
+                return line[1][0]
 
-    return None
+    return find_phrase(phrase, img_path, limit+500, full_image)
 
-    
+def print_to_file(cleaned_product_price_dictionary, amount):
+    date_phrase = find_phrase("Date:", img_path, 500)
+    if date_phrase is not None:
+        print(date_phrase)
+        time_phrase = find_phrase("Time:", img_path, 500)
+        if time_phrase is not None:
+            print(time_phrase)
+
+    datetime_var = get_datetime_var(date_phrase, time_phrase)
+    receipt = Receipt(datetime_var, cleaned_product_price_dictionary, amount)
+
+    # file = open("output.json", "w")
+    # file.write(json.dumps(receipt, sort_keys=False))
+
+
+    with open('output.json', 'w') as f:
+        json.dump(receipt, f, cls=MyEncoder, indent=4)
+
+def get_datetime_var(date_string, time_string):
+    date_string = str.removeprefix(date_string, "Date: ")
+    time_string = str.removeprefix(time_string, "Time: ")
+
+    day, month, year = str.split(date_string, '/')
+    hour, minute, second = str.split(time_string, ':')
+
+    year = int("20" + year)
+    month = int(month)
+    day = int(day)
+    hour = int(hour)
+    minute = int(minute)
+    second = int(second)
+
+    datetime_variable = datetime.datetime(year, month, day, hour, minute, second)
+    return datetime_variable
 
 ocr = PaddleOCR(lang='en') # need to run only once to download and load model into memory
 img_path = "./IMG_0196.png"
@@ -200,22 +238,14 @@ amount = 0.0
 
 cropped_image_name = crop_receipt(img_path)
 
-print(base_path + cropped_image_name)
+#print(base_path + cropped_image_name)
 divide_by_row(base_path + cropped_image_name)
+
+print_to_file(cleaned_product_price_dictionary, amount)
+
 
 #found_phrase = find_phrase("TOTAL", img_path, 500)
 #if found_phrase is not None:
 #    print(found_phrase)
 
-#found_phrase = find_phrase("Date:", img_path, 500)
-#if found_phrase is not None:
-#    print(found_phrase)
 
-receipt = Receipt(cleaned_product_price_dictionary, amount)
-
-# file = open("output.json", "w")
-# file.write(json.dumps(receipt, sort_keys=False))
-
-
-with open('output.json', 'w') as f:
-    json.dump(receipt, f, cls=MyEncoder, indent=4)
