@@ -45,6 +45,11 @@ type CategoryScore struct {
 	Score      float64
 }
 
+type PurchaseRecord struct {
+	purchase    Purchase
+	receiptDate string
+}
+
 func AddReceipt(receipt Receipt, db *sql.DB) (int64, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -242,7 +247,11 @@ func PredictPurchases() {
 
 	targetTime := time.Date(2023, 12, 24, 15, 30, 0, 0, time.Local) // Example: Christmas Eve at 3:30 PM
 
-	_, _ = getTimeBasedRecommendations(db, targetTime)
+	categoryScores, err := getTimeBasedRecommendations(db, targetTime)
+
+	for _, cs := range categoryScores {
+		fmt.Printf("Category ID: %d, score: %f \n", cs.CategoryID, cs.Score)
+	}
 }
 
 func getTimeBasedRecommendations(db *sql.DB, targetTime time.Time) ([]CategoryScore, error) {
@@ -254,7 +263,42 @@ func getTimeBasedRecommendations(db *sql.DB, targetTime time.Time) ([]CategorySc
 		return nil, err
 	}
 	defer rows.Close()
-	return nil, nil
+
+	var purchases []PurchaseRecord
+	for rows.Next() {
+		var pr PurchaseRecord
+		err = rows.Scan(&pr.purchase.Id, &pr.purchase.Product, &pr.purchase.Price, &pr.purchase.CategoryId, &pr.receiptDate)
+		if err != nil {
+			return nil, err
+		}
+
+		purchases = append(purchases, pr)
+	}
+
+	scores := make(map[int]*CategoryScore)
+	//targetWeekday := int(targetTime.Weekday())
+	//targetMonth := int(targetTime.Month())
+
+	//categories := GetAllCategories(db)
+
+	for _, p := range purchases {
+		var catID = int(p.purchase.CategoryId.Int64)
+		if scores[catID] == nil {
+			scores[catID] = &CategoryScore{
+				CategoryID: catID,
+				Score:      1,
+			}
+		} else {
+			scores[catID].Score += 1
+		}
+	}
+
+	var categoryScores []CategoryScore
+	for _, score := range scores {
+		categoryScores = append(categoryScores, *score)
+	}
+
+	return categoryScores, nil
 }
 
 func OpenDatabase() (*sql.DB, error) {
