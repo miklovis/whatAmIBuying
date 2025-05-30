@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"time"
@@ -47,7 +48,7 @@ type CategoryScore struct {
 
 type PurchaseRecord struct {
 	purchase    Purchase
-	receiptDate string
+	receiptDate time.Time
 }
 
 func AddReceipt(receipt Receipt, db *sql.DB) (int64, error) {
@@ -248,6 +249,9 @@ func PredictPurchases() {
 	targetTime := time.Date(2023, 12, 24, 15, 30, 0, 0, time.Local) // Example: Christmas Eve at 3:30 PM
 
 	categoryScores, err := getTimeBasedRecommendations(db, targetTime)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	for _, cs := range categoryScores {
 		fmt.Printf("Category ID: %d, score: %f \n", cs.CategoryID, cs.Score)
@@ -264,10 +268,18 @@ func getTimeBasedRecommendations(db *sql.DB, targetTime time.Time) ([]CategorySc
 	}
 	defer rows.Close()
 
+	fmt.Println("here")
+
 	var purchases []PurchaseRecord
 	for rows.Next() {
 		var pr PurchaseRecord
-		err = rows.Scan(&pr.purchase.Id, &pr.purchase.Product, &pr.purchase.Price, &pr.purchase.CategoryId, &pr.receiptDate)
+		var dateStr string
+		err = rows.Scan(&pr.purchase.Id, &pr.purchase.Product, &pr.purchase.Price, &pr.purchase.CategoryId, &dateStr)
+		if err != nil {
+			return nil, err
+		}
+
+		pr.receiptDate, err = time.Parse("2006-01-02 15:04:05.123456", dateStr)
 		if err != nil {
 			return nil, err
 		}
@@ -276,21 +288,36 @@ func getTimeBasedRecommendations(db *sql.DB, targetTime time.Time) ([]CategorySc
 	}
 
 	scores := make(map[int]*CategoryScore)
-	//targetWeekday := int(targetTime.Weekday())
-	//targetMonth := int(targetTime.Month())
+	targetWeekday := int(targetTime.Weekday())
+	targetMonth := int(targetTime.Month())
 
-	//categories := GetAllCategories(db)
-
+	fmt.Println("here")
 	for _, p := range purchases {
 		var catID = int(p.purchase.CategoryId.Int64)
 		if scores[catID] == nil {
 			scores[catID] = &CategoryScore{
 				CategoryID: catID,
-				Score:      1,
+				Score:      0,
 			}
-		} else {
-			scores[catID].Score += 1
 		}
+
+		fmt.Println("here")
+		// Weekday score
+		purchaseWeekday := int(p.receiptDate.Weekday())
+		weekdayDist := math.Mod(float64(purchaseWeekday-targetWeekday+7), 7)
+		weekdayScore := math.Exp(-math.Pow(weekdayDist, 2)/4.5) * 0.5
+
+		// Month score
+		purchaseMonth := int(p.receiptDate.Month())
+		monthDist := math.Mod(float64(purchaseMonth-targetMonth+12), 12)
+		if monthDist > 6 {
+			monthDist = 12 - monthDist
+		}
+		monthScore := math.Exp(-math.Pow(monthDist, 2)/8.0) * 0.3
+
+		freqScore := 0.2
+		fmt.Printf("%f", weekdayScore+monthScore+freqScore)
+		scores[catID].Score += weekdayScore + monthScore + freqScore
 	}
 
 	var categoryScores []CategoryScore
