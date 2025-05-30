@@ -279,9 +279,13 @@ func getTimeBasedRecommendations(db *sql.DB, targetTime time.Time) ([]CategorySc
 			return nil, err
 		}
 
-		pr.receiptDate, err = time.Parse("2006-01-02 15:04:05.123456", dateStr)
+		pr.receiptDate, err = time.Parse("2006-01-02 15:04:05", dateStr)
 		if err != nil {
-			return nil, err
+			// If standard format fails, try with microseconds
+			pr.receiptDate, err = time.Parse("2006-01-02 15:04:05.000000", dateStr)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		purchases = append(purchases, pr)
@@ -333,6 +337,16 @@ func OpenDatabase() (*sql.DB, error) {
 	return db, err
 }
 
+func TestLLM() {
+	// Example: Call Ollama with your deepseek model
+	response, err := CallOllama("deepseek-r1:7b", "Hello")
+	if err != nil {
+		log.Printf("Error calling Ollama: %v", err)
+	} else {
+		fmt.Println("Ollama response:", response)
+	}
+}
+
 func main() {
 	assignFlag := flag.Bool("a", false, "assign mode (shorthand)")
 	assignFlagLong := flag.Bool("assign", false, "assign mode")
@@ -340,6 +354,8 @@ func main() {
 	readFlagLong := flag.Bool("read", false, "read mode")
 	predictFlag := flag.Bool("p", false, "predict mode (shorthand)")
 	predictFlagLong := flag.Bool("predict", false, "predict mode")
+	llmFlag := flag.Bool("l", false, "LLM mode (shorthand)")
+	llmFlagLong := flag.Bool("llm", false, "LLM mode")
 
 	flag.Parse()
 
@@ -355,5 +371,8 @@ func main() {
 	} else if *predictFlag || *predictFlagLong {
 		fmt.Println("Predict mode activated")
 		PredictPurchases()
+	} else if *llmFlag || *llmFlagLong {
+		fmt.Println("LLM mode activated")
+		TestLLM()
 	}
 }
