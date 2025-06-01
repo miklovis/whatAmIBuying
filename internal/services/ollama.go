@@ -1,4 +1,4 @@
-package main
+package services
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 type OllamaRequest struct {
 	Model  string `json:"model"`
 	Prompt string `json:"prompt"`
-	Stream bool   `json:"stream,omitempty"`
+	Stream bool   `json:"stream"`
 }
 
 // OllamaResponse represents the response from Ollama API
@@ -60,9 +60,6 @@ func CallOllama(modelName string, prompt string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error reading response: %w", err)
 	}
-
-	// For debugging
-	fmt.Println("Raw response:", string(body))
 
 	// Parse response
 	var ollamaResp OllamaResponse
