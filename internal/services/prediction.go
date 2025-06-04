@@ -96,13 +96,3 @@ func getTimeBasedRecommendations(db *sql.DB, targetTime time.Time) ([]models.Cat
 
 	return categoryScores, nil
 }
-
-func TestLLM() {
-	// Example: Call Ollama with your deepseek model
-	response, err := CallOllama("deepseek-r1:7b", "Hello")
-	if err != nil {
-		log.Printf("Error calling Ollama: %v", err)
-	} else {
-		fmt.Println("Ollama response:", response)
-	}
-}

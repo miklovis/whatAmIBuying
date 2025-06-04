@@ -37,3 +37,23 @@ func ChangePurchaseCategory(db *sql.DB, categoryId *int, purchaseId *int) (sql.R
 
 	return result, nil
 }
+
+func GetUnassignedPurchases(db *sql.DB) ([]models.Purchase, error) {
+	rows, err := db.Query("SELECT * FROM Purchases WHERE categoryId IS NULL")
+	if err != nil {
+		return nil, fmt.Errorf("Error reading from Purchases table: %w", err)
+	}
+	defer rows.Close()
+
+	var purchases []models.Purchase
+	for rows.Next() {
+		var p models.Purchase
+		err := rows.Scan(&p.Id, &p.Product, &p.Price, &p.ReceiptId, &p.CategoryId)
+		if err != nil {
+			return nil, fmt.Errorf("Error scanning purchase: %w", err)
+		}
+		purchases = append(purchases, p)
+	}
+
+	return purchases, nil
+}

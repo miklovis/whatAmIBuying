@@ -29,3 +29,15 @@ func GetAllCategories(db *sql.DB) *[]models.Category {
 
 	return &categories
 }
+
+func GetCategoryNameByID(db *sql.DB, id int) (string, error) {
+	var categoryName string
+	err := db.QueryRow("SELECT Category FROM Categories WHERE ID = ?", id).Scan(&categoryName)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("no category found with ID %d", id)
+		}
+		return "", fmt.Errorf("error querying category: %w", err)
+	}
+	return categoryName, nil
+}
