@@ -84,14 +84,18 @@ func CallOllama(modelName string, prompt string) (string, error) {
 
 // RemoveThinkTagContent removes content inside <think> tags from the response
 func RemoveThinkTags(response string) string {
-	// Remove content inside <think> tags
-	start := strings.Index(response, "<think>")
-	if start != -1 {
-		end := strings.Index(response, "</think>")
-		if end != -1 && end > start {
-			response = response[:start] + response[end+len("</think>"):]
+	// Remove all content inside <think> tags (handle multiple pairs)
+	for {
+		start := strings.Index(response, "<think>")
+		if start == -1 {
+			break
+		}
+		end := strings.Index(response[start:], "</think>")
+		if end != -1 {
+			response = response[:start] + response[start+end+len("</think>"):]
 		} else {
 			response = response[:start]
+			break
 		}
 	}
 
@@ -109,7 +113,10 @@ func ParseLLMResponse(response string) (int, error) {
 	var result map[string]interface{}
 	if err := json.Unmarshal([]byte(response), &result); err == nil {
 		if id, ok := result["ID"].(float64); ok {
-			return int(id), nil
+			idInt := int(id)
+			if idInt >= 1 && id == float64(idInt) {
+				return idInt, nil
+			}
 		}
 	}
 
@@ -121,39 +128,43 @@ func ParseLLMResponse(response string) (int, error) {
 		var extractedResult map[string]interface{}
 		if err := json.Unmarshal([]byte(matches[1]), &extractedResult); err == nil {
 			if id, ok := extractedResult["ID"].(float64); ok {
-				return int(id), nil
+				idInt := int(id)
+				if idInt >= 1 && id == float64(idInt) {
+					return idInt, nil
+				}
 			}
 		}
 	}
 
 	// Third try: look for any JSON-like pattern using regex
-	jsonPattern := "{\\s*['\"]?ID['\"]?\\s*:\\s*([0-9]+)\\s*}"
+	jsonPattern := "{\\s*['\"]?ID['\"]?\\s*:\\s*(-?[0-9]+)\\s*}"
 	re = regexp.MustCompile(jsonPattern)
 	matches = re.FindStringSubmatch(response)
 	if len(matches) > 1 {
 		id, err := strconv.Atoi(matches[1])
-		if err == nil {
+		if err == nil && id >= 1 {
 			return id, nil
 		}
 	}
 
 	// Fourth try: look for ID followed by a number
-	idPattern := "ID\\s*:?\\s*([0-9]+)"
+	idPattern := "ID\\s*:?\\s*(-?[0-9]+)"
 	re = regexp.MustCompile(idPattern)
 	matches = re.FindStringSubmatch(response)
 	if len(matches) > 1 {
 		id, err := strconv.Atoi(matches[1])
-		if err == nil {
+		if err == nil && id >= 1 {
 			return id, nil
 		}
 	}
 
 	// Finally: attempt to find any number in the response as a last resort
-	numPattern := "([0-9]+)"
+	// Use negative lookbehind to avoid matching numbers preceded by minus sign
+	numPattern := "(?:^|[^-])([0-9]+)"
 	re = regexp.MustCompile(numPattern)
 	matches = re.FindStringSubmatch(response)
-	if len(matches) > 0 {
-		id, err := strconv.Atoi(matches[0])
+	if len(matches) > 1 {
+		id, err := strconv.Atoi(matches[1])
 		if err == nil && id >= 1 && id <= 16 {
 			return id, nil
 		}

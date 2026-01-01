@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"whatAmIBuying/internal/services"
 
 	_ "modernc.org/sqlite"
@@ -24,7 +25,7 @@ func main() {
 		fmt.Println("Assign mode activated")
 		err := services.AssignPurchases()
 		if err != nil {
-			fmt.Errorf("Error assigning purchases: %w", err)
+			log.Fatal("Error assigning purchases: ", err)
 		}
 	} else if *readFlag || *readFlagLong {
 		fmt.Println("Read mode activated")
