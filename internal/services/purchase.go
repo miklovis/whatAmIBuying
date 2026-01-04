@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"log"
+	"os"
 	"whatAmIBuying/internal/database"
 	"whatAmIBuying/internal/models"
 )
@@ -15,10 +16,27 @@ func AssignPurchases() error {
 
 	var categories = database.GetAllCategories(db)
 
-	fmt.Println("Assign the purchase to one of these categories: ")
-	for _, category := range *categories {
-		fmt.Printf("ID: %d, Category: %s \n", category.ID, category.Category)
+	if len(*categories) == 0 {
+		return fmt.Errorf("no categories found in database")
 	}
+
+	// Find min and max category IDs
+	minID := (*categories)[0].ID
+	maxID := (*categories)[0].ID
+	for _, category := range *categories {
+		if category.ID < minID {
+			minID = category.ID
+		}
+		if category.ID > maxID {
+			maxID = category.ID
+		}
+	}
+
+	fmt.Println("\nAssign the purchase to one of these categories: ")
+	for _, category := range *categories {
+		fmt.Printf("  [%d] %s\n", category.ID, category.Category)
+	}
+	fmt.Println()
 
 	var purchasesWithNullCategoryId []models.Purchase
 	purchasesWithNullCategoryId, err = database.GetUnassignedPurchases(db)
@@ -26,18 +44,33 @@ func AssignPurchases() error {
 		return fmt.Errorf("getting unassigned purchases failed: %w", err)
 	}
 
-	for _, p := range purchasesWithNullCategoryId {
-		var id int
+	if len(purchasesWithNullCategoryId) == 0 {
+		fmt.Println("No unassigned purchases found.")
+		return nil
+	}
 
-		fmt.Printf("Which category does %s bought for %s belong to? ", p.Product, p.Price)
-		fmt.Scan(&id)
+	// Create validator with stdin
+	validator := NewInputValidator(os.Stdin)
+	maxAttempts := 3
+
+	for i, p := range purchasesWithNullCategoryId {
+		fmt.Printf("[%d/%d] Which category does '%s' (£%s) belong to? ",
+			i+1, len(purchasesWithNullCategoryId), p.Product, p.Price)
+
+		id, err := validator.ReadCategoryID(minID, maxID, maxAttempts)
+		if err != nil {
+			return fmt.Errorf("failed to read category ID for '%s': %w", p.Product, err)
+		}
 
 		_, err = database.ChangePurchaseCategory(db, &id, &p.Id)
 		if err != nil {
 			return fmt.Errorf("changing purchase category failed: %w", err)
 		}
+
+		fmt.Printf("Assigned '%s' to category %d\n\n", p.Product, id)
 	}
 
+	fmt.Printf("Successfully assigned %d purchases!\n", len(purchasesWithNullCategoryId))
 	return nil
 }
 
